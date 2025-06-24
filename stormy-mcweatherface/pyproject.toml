@@ -1,0 +1,20 @@
+[project]
+name = "stormy-mcweatherface"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Simon Simonsson", email = "simon.simonsson@posten.no" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "databricks-sdk>=0.57.0",
+    "mlflow>=3.1.0",
+]
+
+[project.scripts]
+stormy-mcweatherface = "stormy_mcweatherface:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
