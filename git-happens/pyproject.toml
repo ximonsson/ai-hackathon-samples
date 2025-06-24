@@ -1,0 +1,24 @@
+[project]
+name = "git-happens"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Simon Simonsson", email = "simon.simonsson@posten.no" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "smolagents>=1.19.0",
+]
+
+[project.scripts]
+git-happens = "git_happens:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ipython>=9.3.0",
+]
