@@ -11,7 +11,7 @@ client = wc.serving_endpoints.get_open_ai_client()
 # create a smolagents agent
 model = smolagents.OpenAIServerModel(
     model_id=MODEL,
-    api_base=client.base_url,
+    client=client,
 )
 
 params = mcp.StdioServerParameters(
@@ -34,4 +34,8 @@ def main() -> None:
         agent = smolagents.ToolCallingAgent(
             tools=[*tool_collection.tools], model=model, add_base_tools=False
         )
-        agent.run("how many open pull requests does bring/iac-ekofisk have?")
+        # create ui
+        ui = smolagents.GradioUI(
+            agent, file_upload_folder="uploads", reset_agent_memory=False
+        )
+        ui.launch()
