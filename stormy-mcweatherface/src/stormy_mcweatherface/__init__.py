@@ -89,9 +89,5 @@ def get_weather(lat, lon, user_agent="MyApp/1.0 (oda.johanne.kristensen[at]poste
         print(f"Request failed: {e}")
         return None
 
-    
-
-
-
 def main() -> None:
     print("Hello from stormy-mcweatherface!")
