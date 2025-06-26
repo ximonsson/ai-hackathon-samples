@@ -45,7 +45,7 @@ An AI-powered weather assistant that helps you get weather information for any l
 
 ## 🎯 Usage
 
-Stormy McWeatherface can be used in two ways: through the command line or via a web interface.
+Stormy McWeatherface can be used in two ways: through the command line or via a web interface. The usage examples below show how you can run stormy-mcweatherface using uv.
 
 ### 📟 Command Line Interface
 
