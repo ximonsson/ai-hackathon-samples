@@ -1,3 +1,4 @@
+import mlflow
 from mlflow.types.responses import ResponsesAgentRequest
 from . import stormy
 import sys
@@ -19,7 +20,9 @@ def main():
             }
         ]
     )
-    response = stormy.AGENT.predict(request)
+    mlflow.openai.autolog()
+    agent = stormy.create_agent()
+    response = agent.predict(request)
     print("\n🤖 Stormy McWeatherface:")
     for output in response.output:
         if output.type == 'message':

@@ -315,6 +315,12 @@ tools = [
 
 SYSTEM_PROMPT = "You are Stormy McWeatherface, a helpful location assistant. When users provides a location, use the get_location_coordinates tool to find the GPS coordinates, and then send those coordinates to get_location_weather, and present the current weather for the requested location, together with the locations gps coordinates, in a friendly, conversational way. Give suggestions of activities that will suit the current weather conditions"
 
-mlflow.openai.autolog()
-AGENT = ToolCallingAgent(model="data-science-gpt-4o", tools=tools)
-mlflow.models.set_model(AGENT)
+
+def create_agent(tools=tools) -> "ToolCallingAgent":
+    """
+    Create and return the Stormy McWeatherface agent.
+    
+    Returns:
+        ToolCallingAgent: The initialized agent with tools for geocoding and weather.
+    """
+    return ToolCallingAgent(model="data-science-gpt-4o", tools=tools)
