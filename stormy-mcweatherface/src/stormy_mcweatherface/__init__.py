@@ -1,11 +1,9 @@
-from datetime import datetime
 import httpx
 import requests
-import pandas as pd
 from typing import Dict, Any, Optional
 
 
-async def geocode_location(query: str, limit: int = 1) -> Optional[Dict[str, Any]]:
+async def get_geocode_location(query: str, limit: int = 1) -> Optional[Dict[str, Any]]:
     """
     Geocode a location using the Nominatim API.
     
@@ -35,21 +33,29 @@ async def geocode_location(query: str, limit: int = 1) -> Optional[Dict[str, Any
             response.raise_for_status()
             
             results = response.json()
-            return results[0] if results else None
-            
-        except httpx.HTTPError as e:
-            print(f"HTTP error occurred: {e}")
-            return None
+            if results:
+                return {
+                "success": True,
+                "location": results[0].get('display_name', query),
+                "latitude": float(results[0]['lat']),
+                "longitude": float(results[0]['lon'])
+            } 
+
+            #return results[0] if results else None
+            else:
+                return {
+                    "success": False,
+                    "error": f"Could not find coordinates for location: {query}"
+                }
         except Exception as e:
-            print(f"An error occurred: {e}")
-            return None
+            return {
+                "success": False,
+                "error": f"Error geocoding location: {str(e)}"
+            }
 
 
-            
 
-
-
-def get_weather(lat, lon, user_agent="MyApp/1.0 (oda.johanne.kristensen[at]posten.no)"):
+async def get_weather(lat, lon, user_agent="MyApp/1.0 (oda.johanne.kristensen[at]posten.no)"):
     """
     Get weather forecast from met.no API
     
@@ -71,23 +77,24 @@ def get_weather(lat, lon, user_agent="MyApp/1.0 (oda.johanne.kristensen[at]poste
         'User-Agent': user_agent
     }
     
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, headers=headers)
         
-        if response.status_code == 200:
-            return response.json()
-        elif response.status_code == 403:
-            print("Error: Invalid User-Agent. Please use your real app name and contact info.")
-        elif response.status_code == 429:
-            print("Error: Too many requests. Please wait before trying again.")
-        else:
-            print(f"Error: HTTP {response.status_code}")
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 403:
+                print("Error: Invalid User-Agent. Please use your real app name and contact info.")
+            elif response.status_code == 429:
+                print("Error: Too many requests. Please wait before trying again.")
+            else:
+                print(f"Error: HTTP {response.status_code}")
+                
+            return None
             
-        return None
-        
-    except requests.exceptions.RequestException as e:
-        print(f"Request failed: {e}")
-        return None
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+            return None
 
 def main() -> None:
     print("Hello from stormy-mcweatherface!")

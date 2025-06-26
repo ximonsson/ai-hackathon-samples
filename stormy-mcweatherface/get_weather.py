@@ -1,6 +1,7 @@
 import json
 from typing import Any, Callable, Generator
 import os
+import sys
 from uuid import uuid4
 import asyncio
 
@@ -17,7 +18,7 @@ from mlflow.types.responses import (
 from pydantic import BaseModel
 
 import databricks.sdk
-from stormy_mcweatherface import geocode_location, get_weather
+from stormy_mcweatherface import get_geocode_location, get_weather
 
 
 
@@ -63,7 +64,7 @@ class ToolCallingAgent(ResponsesAgent):
             model=self.model,
             messages=input_messages,
             tools=self.get_tool_specs(),
-            temperature=0.7
+            temperature=1.2
         )
         
         message = response.choices[0].message
@@ -165,35 +166,14 @@ class ToolCallingAgent(ResponsesAgent):
 
 
 # Tool implementation for getting GPS coordinates
-async def get_coordinates_for_location(location: str) -> dict:
-    """Get coordinates for a location using the geocode_location function"""
-    try:
-        result = await geocode_location(location)
-        if result:
-            return {
-                "success": True,
-                "location": result.get('display_name', location),
-                "latitude": float(result['lat']),
-                "longitude": float(result['lon'])
-            }
-        else:
-            return {
-                "success": False,
-                "error": f"Could not find coordinates for location: {location}"
-            }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": f"Error geocoding location: {str(e)}"
-        }
 
 tools = [
     ToolInfo(
-        name="get_location_coordinates",
+        name="get_geocode_location",
         spec={
-            "type": "function",
+            "type": "function", 
             "function": {
-            "name": "get_location_coordinates", 
+            "name": "get_geocode_location", 
             "description": "Get GPS coordinates (latitude and longitude) for a given location name or address.",
             "parameters": {
                 "type": "object",
@@ -208,7 +188,7 @@ tools = [
             }},
             "strict": True,
         },
-        exec_fn=lambda location: asyncio.run(get_coordinates_for_location(location))
+        exec_fn=lambda location: asyncio.run(get_geocode_location(location))
     ), 
     ToolInfo(
         name="get_weather",
@@ -235,32 +215,36 @@ tools = [
             },
             "strict": True,
         },
-        exec_fn=lambda lat, lon: get_weather(float(lat), float(lon))
+        exec_fn=lambda lat, lon: asyncio.run(get_weather(float(lat), float(lon)))
     )
 ]
 
-SYSTEM_PROMPT = "You are Stormy McWeatherface, a helpful location assistant. When users provides a location, use the get_location_coordinates tool to find the GPS coordinates, and then send those coordinates to get_location_weather, and present the current weather for the requested location, together with the locations gps coordinates, in a friendly, conversational way. Give a suggestion of what an activity that will suit the current weather conditions"
+SYSTEM_PROMPT = "You are Stormy McWeatherface, a helpful location assistant. When users provides a location, use the get_location_coordinates tool to find the GPS coordinates, and then send those coordinates to get_location_weather, and present the current weather for the requested location, together with the locations gps coordinates, in a friendly, conversational way. Give suggestions of activities that will suit the current weather conditions"
 
 mlflow.openai.autolog()
 AGENT = ToolCallingAgent(model="data-science-gpt-4o", tools=tools)
 mlflow.models.set_model(AGENT)
 
-# Test function to interact with the agent
-def test_agent():
+def main():
+    # Get location from command line argument or use default
+    if len(sys.argv) > 1:
+        location = " ".join(sys.argv[1:])  # Join all arguments in case of spaces
+    else:
+        location = "Biskop Gunnerus gate 14"
+    
+    print(f"🌦️ Getting weather information for: {location}")
+    
     request = ResponsesAgentRequest(
         input=[
             {
-                "role": "system",
-                 "content": SYSTEM_PROMPT},
-            {
                 "role": "user",
-                "content": "What is the weather like in Biskop Gunnerus gate 14?"
+                "content": f"What is the weather like in {location}?"
             }
         ]
     )
     
     response = AGENT.predict(request)
-    print("Agent Response:")
+    print("\n🤖 Stormy McWeatherface:")
     for output in response.output:
         if output.type == 'message':
             content = output.content
@@ -270,4 +254,4 @@ def test_agent():
             print(output['content'])
 
 if __name__ == "__main__":
-    test_agent()
+    main()
