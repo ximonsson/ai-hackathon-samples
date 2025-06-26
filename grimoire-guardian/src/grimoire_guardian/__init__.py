@@ -1,116 +1,148 @@
 import pathlib
-import os
 from typing import Annotated
 from typing_extensions import TypedDict
 import databricks.sdk
-
-# from langchain_community.tools import DuckDuckGoSearchResults
+import functools
 import langchain.chat_models
 from langgraph.graph import StateGraph, START
 from langgraph.graph.message import add_messages
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.prompts import ChatPromptTemplate
-import faiss
-import sentence_transformers
+from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 import langchain_unstructured
+import torch
 
-
-wc = databricks.sdk.WorkspaceClient()
-client = wc.serving_endpoints.get_open_ai_client()
 
 MODEL = "data-science-gpt-4o"
 MODEL_EMB = "sentence-transformers/all-MiniLM-L6-v2"
 DOC = "harry-potter-and-the-sorcerers-stone.pdf"
 
-embedder = sentence_transformers.SentenceTransformer(MODEL_EMB)
-
-#
-# index the document
-#
-
-
-def create_index():
-    ld = langchain_unstructured.UnstructuredLoader(DOC)
-    doc = ld.load()
-    return doc
-
-
-def search_index(topk: int = 50):
-    """ """
-    pass
-
-
-#
-# Create graph
-#
-
-
-# read system prompt for the agent
-
-with open(pathlib.Path(__file__).parent / "sysprompt.txt") as f:
-    prompt = f.read()
-
-
-class State(TypedDict):
-    query: str
-    messages: Annotated[list, add_messages]
-
-
-# TODO these search results are no good, I would like the same as smolagents
-# tool = DuckDuckGoSearchResults(max_results=10)
-
-tool = search_index
-llm = langchain.chat_models.init_chat_model(
-    f"openai:{MODEL}",
-    base_url=str(client.base_url),
-    temperature=0.1,
-).bind_tools([tool])
-
-
-def chatbot(state: State):
-    return {
-        "query": state["query"],
-        "messages": [llm.invoke(state["messages"])],
-    }
-
-
-tool_node = ToolNode(tools=[tool])
-
-# create system prompt template
-
-prompt_template = ChatPromptTemplate.from_messages(
-    [
-        ("system", prompt),
-        ("human", "{input}"),
-    ]
+embedder = HuggingFaceEmbeddings(
+    model_name=MODEL_EMB,
+    model_kwargs={
+        "model_kwargs": {"torch_dtype": torch.float16}
+    },  # half precision for faster inference
+    encode_kwargs={"normalize_embeddings": False, "batch_size": 16},
+    show_progress=True,
 )
 
-
-def sysprompt(state: State):
-    return {
-        "query": state["query"],
-        "messages": prompt_template.invoke({"input": state["query"]}).messages,
-    }
+# get databricks workspace client and fetch the OpenAI client towards
+# serving endpoints.
+wc = databricks.sdk.WorkspaceClient()
+client = wc.serving_endpoints.get_open_ai_client()
 
 
-# create graph
+def create_index(doc: str):
+    # load document and chunk it
+    # this function should support quite a lot of different file formats
+    ld = langchain_unstructured.UnstructuredLoader(doc)
+    chunks = ld.load_and_split()
 
-graph_builder = StateGraph(State)
+    # filter out only narrative text to index and create index
+    chunks = list(filter(lambda x: x.metadata["category"] == "NarrativeText", chunks))
+    idx = FAISS.from_documents(chunks, embedder)
 
-# nodes
-graph_builder.add_node("chatbot", chatbot)
-graph_builder.add_node("tools", tool_node)
-graph_builder.add_node("sysprompt", sysprompt)
+    return idx
 
-# edges
-graph_builder.add_edge(START, "sysprompt")
-graph_builder.add_edge("sysprompt", "chatbot")
-graph_builder.add_conditional_edges("chatbot", tools_condition)
-# Any time a tool is called, we return to the chatbot to decide the next step
-graph_builder.add_edge("tools", "chatbot")
 
-graph = graph_builder.compile()
+def search_index(idx, q: str, topk: int = 50):
+    """
+    Search the index for the query and return the topk results.
+    """
+    retriever = idx.as_retriever(search_kwargs={"k": topk})
+    docs = retriever.invoke(q)
+    return docs
+
+
+def graph(idx) -> StateGraph:
+    """
+    return graph
+    """
+
+    #
+    # Setup LLM
+    #
+
+    # read system prompt for the agent
+    with open(pathlib.Path(__file__).parent / "sysprompt.txt") as f:
+        prompt = f.read()
+
+    def search(q: str) -> str:
+        """
+        Search the document for relevant chunks to query.
+
+        Args:
+            q (str): Query.
+
+        Returns:
+            str: All relevant chunks delimited by "\n\n=======\n\n".
+        """
+        docs = search_index(idx, q)
+        return "\n\n=======\n\n".join([x.page_content for x in docs])
+
+    # the agent will have as a tool to be able to search the document
+    tool = search
+    llm = langchain.chat_models.init_chat_model(
+        f"openai:{MODEL}",
+        base_url=str(client.base_url),
+        temperature=0.1,
+    ).bind_tools([tool])
+
+    #
+    # Setup graph
+    #
+
+    # define custom class that keeps track of the state
+    class State(TypedDict):
+        query: str
+        messages: Annotated[list, add_messages]
+
+    # Node handling interaction with the LLM
+    def chatbot(state: State):
+        return {
+            "query": state["query"],
+            "messages": [llm.invoke(state["messages"])],
+        }
+
+    # Node for invoking tools
+    tool_node = ToolNode(tools=[tool])
+
+    # create system prompt template
+    prompt_template = ChatPromptTemplate.from_messages(
+        [
+            ("system", prompt),
+            ("human", "{input}"),
+        ]
+    )
+
+    def sysprompt(state: State):
+        return {
+            "query": state["query"],
+            "messages": prompt_template.invoke({"input": state["query"]}).messages,
+        }
+
+    # create graph
+    graph_builder = StateGraph(State)
+
+    # nodes
+    graph_builder.add_node("chatbot", chatbot)
+    graph_builder.add_node("tools", tool_node)
+    graph_builder.add_node("sysprompt", sysprompt)
+
+    # edges
+    graph_builder.add_edge(START, "sysprompt")
+    graph_builder.add_edge("sysprompt", "chatbot")
+    graph_builder.add_conditional_edges("chatbot", tools_condition)
+    # Any time a tool is called, we return to the chatbot to decide the next step
+    graph_builder.add_edge("tools", "chatbot")
+
+    graph = graph_builder.compile()
+
+    return graph
 
 
 def main() -> None:
-    pass
+    idx = create_index(DOC)
+    g = graph(idx)
+    g.invoke({"query": "What happened to Harry's parents?"})
