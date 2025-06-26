@@ -1,9 +1,10 @@
 import json
-from typing import Any, Callable, Generator
+from typing import Any, Callable, Generator, Optional, Dict
 import os
 import sys
 from uuid import uuid4
 import asyncio
+import httpx
 
 import backoff
 import mlflow
@@ -18,8 +19,101 @@ from mlflow.types.responses import (
 from pydantic import BaseModel
 
 import databricks.sdk
-from stormy_mcweatherface import get_geocode_location, get_weather
+#from stormy_mcweatherface import get_geocode_location, get_weather
 
+
+async def get_geocode_location(query: str, limit: int = 1) -> Optional[Dict[str, Any]]:
+    """
+    Geocode a location using the Nominatim API.
+    
+    Args:
+        query: The location to search for (e.g., "Paris, France")
+        limit: Maximum number of results to return (default: 1)
+    
+    Returns:
+        Dictionary containing the geocoding result or None if not found
+    """
+    base_url = "https://nominatim.openstreetmap.org/search"
+    
+    params = {
+        "q": query,
+        "format": "json",
+        "limit": limit,
+        "addressdetails": 1
+    }
+    
+    headers = {
+        "User-Agent": "stormy-mcweatherface/0.1.0"
+    }
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(base_url, params=params, headers=headers)
+            response.raise_for_status()
+            
+            results = response.json()
+            if results:
+                return {
+                "success": True,
+                "location": results[0].get('display_name', query),
+                "latitude": float(results[0]['lat']),
+                "longitude": float(results[0]['lon'])
+            } 
+
+            #return results[0] if results else None
+            else:
+                return {
+                    "success": False,
+                    "error": f"Could not find coordinates for location: {query}"
+                }
+        except Exception as e:
+            return {
+                "success": False,
+                "error": f"Error geocoding location: {str(e)}"
+            }
+
+
+
+async def get_weather(lat, lon, user_agent="MyApp/1.0 (oda.johanne.kristensen[at]posten.no)"):
+    """
+    Get weather forecast from met.no API
+    
+    Args:
+        lat: Latitude
+        lon: Longitude  
+        user_agent: Your app name and contact info (REQUIRED)
+    
+    Returns:
+        Weather data dictionary or None if failed
+    """
+    # Round coordinates to 4 decimals (API requirement)
+    lat = round(lat, 4)
+    lon = round(lon, 4)
+    
+    url = f"https://api.met.no/weatherapi/locationforecast/2.0/compact?lat={lat}&lon={lon}"
+    
+    headers = {
+        'User-Agent': user_agent
+    }
+    
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, headers=headers)
+        
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 403:
+                print("Error: Invalid User-Agent. Please use your real app name and contact info.")
+            elif response.status_code == 429:
+                print("Error: Too many requests. Please wait before trying again.")
+            else:
+                print(f"Error: HTTP {response.status_code}")
+                
+            return None
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+            return None
 
 
 class ToolInfo(BaseModel):
@@ -224,34 +318,3 @@ SYSTEM_PROMPT = "You are Stormy McWeatherface, a helpful location assistant. Whe
 mlflow.openai.autolog()
 AGENT = ToolCallingAgent(model="data-science-gpt-4o", tools=tools)
 mlflow.models.set_model(AGENT)
-
-def main():
-    # Get location from command line argument or use default
-    if len(sys.argv) > 1:
-        location = " ".join(sys.argv[1:])  # Join all arguments in case of spaces
-    else:
-        location = "Biskop Gunnerus gate 14"
-    
-    print(f"🌦️ Getting weather information for: {location}")
-    
-    request = ResponsesAgentRequest(
-        input=[
-            {
-                "role": "user",
-                "content": f"What is the weather like in {location}?"
-            }
-        ]
-    )
-    
-    response = AGENT.predict(request)
-    print("\n🤖 Stormy McWeatherface:")
-    for output in response.output:
-        if output.type == 'message':
-            content = output.content
-            if content:
-                print(content[0].get('text', ''))
-        elif 'content' in output:
-            print(output['content'])
-
-if __name__ == "__main__":
-    main()
