@@ -96,7 +96,7 @@ User Input → Gradio UI → Smolagents Agent → MCP Protocol → GitHub API
 ### Key Technologies
 
 - **🤖 Smolagents**: Modern agent framework for tool integration
-- **🔗 MCP (Model Control Protocol)**: Standardized tool communication
+- **🔗 MCP (Model Context Protocol)**: Standardized tool communication
 - **🐳 Docker**: Containerized GitHub MCP server
 - **🎨 Gradio**: Interactive web interface
 - **🏗️ Databricks**: AI model serving platform
