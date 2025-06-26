@@ -1,0 +1,45 @@
+[project]
+name = "grimoire-guardian"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Simon Simonsson", email = "simon.simonsson@posten.no" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "databricks-sdk>=0.57.0",
+    "faiss-cpu>=1.11.0",
+    "gradio>=5.34.2",
+    "langchain>=0.3.26",
+    "langchain-community>=0.3.26",
+    "langchain-huggingface>=0.3.0",
+    "langchain-openai>=0.3.25",
+    "langchain-unstructured>=0.1.6",
+    "langgraph>=0.4.9",
+    "sentence-transformers>=4.1.0",
+    "streamlit>=1.46.0",
+    "unstructured[pdf]>=0.18.1",
+]
+
+[project.scripts]
+grimoire-guardian = "grimoire_guardian:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ipython>=9.3.0",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torchvision = [
+  { index = "pytorch-cpu" },
+]
