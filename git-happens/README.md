@@ -12,7 +12,7 @@ Git Happens is a conversational AI agent that connects to GitHub through the Mod
 
 - **🤖 Conversational GitHub Interface**: Chat with your repositories using natural language
 - **🔧 Repository Management**: Create, update, and manage repositories
-- **🐛 Issue Tracking**: Create, assign, and track issues effortlessly  
+- **🐛 Issue Tracking**: Create, assign, and track issues effortlessly
 - **🔀 Pull Request Workflow**: Manage PRs, reviews, and merges
 - **📊 Repository Analytics**: Get insights about commits, contributors, and activity
 - **🎨 Gradio Web Interface**: User-friendly web UI for interactions
@@ -32,21 +32,24 @@ Git Happens is a conversational AI agent that connects to GitHub through the Mod
 ### Installation
 
 1. **Navigate to the project:**
+
    ```bash
    cd git-happens
    ```
 
 2. **Install dependencies:**
+
    ```bash
    uv sync
    ```
 
 3. **Set up authentication:**
+
    ```bash
    # Databricks credentials
    export DATABRICKS_HOST=<your-databricks-host>
    export DATABRICKS_TOKEN=<your-databricks-token>
-   
+
    # GitHub Personal Access Token
    export GITHUB_PERSONAL_ACCESS_TOKEN=<your-github-token>
    ```
@@ -67,6 +70,7 @@ uv run git-happens
 ```
 
 This will:
+
 - Start the GitHub MCP server in a Docker container
 - Initialize the Smolagents AI agent
 - Launch a web interface (usually at `http://127.0.0.1:7860`)
@@ -76,12 +80,12 @@ This will:
 
 Try asking Git Happens questions like:
 
-- *"Show me the latest issues in my repository"*
-- *"Create a new issue for fixing the login bug"*
-- *"List all open pull requests"*
-- *"What commits were made this week?"*
-- *"Create a new repository called 'my-awesome-project'"*
-- *"Assign issue #123 to john-doe"*
+- _"Show me the latest issues in my repository"_
+- _"Create a new issue for fixing the login bug"_
+- _"List all open pull requests"_
+- _"What commits were made this week?"_
+- _"Create a new repository called 'my-awesome-project'"_
+- _"Assign issue #123 to john-doe"_
 
 ## 🛠️ Technical Architecture
 
@@ -202,6 +206,7 @@ Agent: Merges the specified PR (with safety checks)
 ### Common Issues
 
 **Docker not found:**
+
 ```bash
 # Install Docker Desktop or Docker Engine
 # Verify installation:
@@ -209,6 +214,7 @@ docker --version
 ```
 
 **GitHub authentication failed:**
+
 ```bash
 # Check token is set and valid:
 echo $GITHUB_PERSONAL_ACCESS_TOKEN
@@ -216,12 +222,14 @@ echo $GITHUB_PERSONAL_ACCESS_TOKEN
 ```
 
 **MCP server connection issues:**
+
 ```bash
 # Ensure Docker can pull the image:
 docker pull ghcr.io/github/github-mcp-server
 ```
 
 **Databricks authentication errors:**
+
 ```bash
 # Verify environment variables:
 echo $DATABRICKS_HOST
@@ -229,6 +237,7 @@ echo $DATABRICKS_TOKEN
 ```
 
 **Web interface not loading:**
+
 - Check if port 7860 is available
 - Verify all dependencies are installed with `uv sync`
 - Check terminal for error messages
@@ -245,13 +254,6 @@ echo $DATABRICKS_TOKEN
 - **Permissions**: Use tokens with minimal required permissions
 - **Docker Security**: The MCP server runs in an isolated container
 - **Network Access**: Ensure proper firewall configuration for Docker
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Test with your GitHub repositories (use test repos!)
-4. Submit a pull request
 
 ### Development Setup
 
@@ -286,4 +288,4 @@ This project is licensed under the MIT License.
 
 ---
 
-*When Git happens, make it happen better with AI! 🤖✨*
+_When Git happens, make it happen better with AI! 🤖✨_
