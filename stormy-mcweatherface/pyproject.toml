@@ -8,12 +8,17 @@ authors = [
 ]
 requires-python = ">=3.11"
 dependencies = [
+    "backoff>=2.2.1",
     "databricks-sdk>=0.57.0",
+    "gradio>=4.0.0",
+    "httpx>=0.28.1",
     "mlflow>=3.1.0",
+    "openai>=1.91.0",
 ]
 
 [project.scripts]
 stormy-mcweatherface = "stormy_mcweatherface:main"
+stormy-gradio = "stormy_mcweatherface.gradio_app:launch_app"
 
 [build-system]
 requires = ["hatchling"]
