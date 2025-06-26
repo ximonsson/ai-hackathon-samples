@@ -17,6 +17,8 @@ dependencies = [
     "langchain-openai>=0.3.25",
     "langchain-unstructured>=0.1.6",
     "langgraph>=0.4.9",
+    "sentence-transformers>=4.1.0",
+    "streamlit>=1.46.0",
     "unstructured[pdf]>=0.18.1",
 ]
 

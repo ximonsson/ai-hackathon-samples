@@ -2,7 +2,6 @@ import pathlib
 from typing import Annotated
 from typing_extensions import TypedDict
 import databricks.sdk
-import functools
 import langchain.chat_models
 from langgraph.graph import StateGraph, START
 from langgraph.graph.message import add_messages
@@ -12,6 +11,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 import langchain_unstructured
 import torch
+import streamlit as st
 
 
 MODEL = "data-science-gpt-4o"
@@ -117,6 +117,7 @@ def graph(idx) -> StateGraph:
     )
 
     def sysprompt(state: State):
+        # NOTE we blindly start from zero here
         return {
             "query": state["query"],
             "messages": prompt_template.invoke({"input": state["query"]}).messages,
@@ -145,4 +146,4 @@ def graph(idx) -> StateGraph:
 def main() -> None:
     idx = create_index(DOC)
     g = graph(idx)
-    g.invoke({"query": "What happened to Harry's parents?"})
+    print(g.invoke({"query": "what happened to harry's parents?"}))
