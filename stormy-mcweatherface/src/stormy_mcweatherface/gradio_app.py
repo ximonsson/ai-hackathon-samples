@@ -79,7 +79,7 @@ def create_gradio_interface():
             ["Youngstorget 3"]
         ],
         theme=gr.themes.Soft(),
-        allow_flagging="never"
+        flagging_mode="never"
     )
     
     return interface
