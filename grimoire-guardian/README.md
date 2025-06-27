@@ -29,11 +29,13 @@ The Grimoire Guardian is an AI-powered document assistant that acts as an ancien
 ### Installation
 
 1. **Clone and navigate to the project:**
+
    ```bash
    cd grimoire-guardian
    ```
 
 2. **Install dependencies:**
+
    ```bash
    uv sync
    ```
@@ -42,6 +44,7 @@ The Grimoire Guardian is an AI-powered document assistant that acts as an ancien
    ```bash
    export DATABRICKS_HOST=<your-databricks-host>
    export DATABRICKS_TOKEN=<your-databricks-token>
+   export OPEN_AI_API_KEY=$DATABRICKS_TOKEN
    ```
 
 ### Usage
@@ -55,6 +58,7 @@ uv run streamlit run src/grimoire_guardian/app.py
 ```
 
 This will:
+
 - Start a local web server (usually at `http://localhost:8501`)
 - Automatically index the Harry Potter book
 - Provide a chat interface for asking questions
@@ -67,7 +71,7 @@ Run a quick query from the terminal:
 uv run grimoire-guardian
 ```
 
-This runs the default example query: *"What happened to Harry's parents?"*
+This runs the default example query: _"What happened to Harry's parents?"_
 
 #### 🐍 Python API
 
@@ -160,11 +164,11 @@ def search_index(idx, q: str, topk: int = 50):  # Number of chunks to retrieve
 
 Try asking the Grimoire Guardian questions like:
 
-- *"What happened to Harry's parents?"*
-- *"Who is Professor McGonagall?"*
-- *"Describe the Sorting Hat ceremony"*
-- *"What is Quidditch?"*
-- *"Tell me about Hagrid"*
+- _"What happened to Harry's parents?"_
+- _"Who is Professor McGonagall?"_
+- _"Describe the Sorting Hat ceremony"_
+- _"What is Quidditch?"_
+- _"Tell me about Hagrid"_
 
 ## 🔧 Development
 
@@ -199,21 +203,25 @@ embedder = HuggingFaceEmbeddings(
 ### Common Issues
 
 **Document indexing fails:**
+
 - Ensure PDF is not password-protected
 - Check file permissions and path
 - Verify unstructured package is properly installed
 
 **Databricks authentication errors:**
+
 - Verify environment variables are set correctly
 - Check workspace access permissions
 - Ensure model serving endpoint is accessible
 
 **Out of memory errors:**
+
 - Reduce batch size in embedding configuration
 - Use CPU instead of GPU for embeddings
 - Process smaller document chunks
 
 **Streamlit app not loading:**
+
 - Check if port 8501 is available
 - Verify all dependencies are installed
 - Clear Streamlit cache: `streamlit cache clear`
@@ -238,7 +246,6 @@ uv run streamlit run src/grimoire_guardian/app.py
 uv run grimoire-guardian
 ```
 
-
 ---
 
-*Seek knowledge, and the Grimoire Guardian shall reveal the secrets hidden within the ancient scrolls...* ✨
+_Seek knowledge, and the Grimoire Guardian shall reveal the secrets hidden within the ancient scrolls..._ ✨
